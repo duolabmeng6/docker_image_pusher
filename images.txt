@@ -1,6 +1,7 @@
 serversideup/php:8.4-fpm
 serversideup/php:8.4-fpm-nginx
-caddy:2-alpine
+--platform=linux/amd64 caddy:2-alpine
+--platform=linux/arm64 caddy:2-alpine
 
 #支持私库
 #k8s.gcr.io/kube-state-metrics/kube-state-metrics:v2.0.0
