@@ -1,7 +1,8 @@
-serversideup/php:8.4-fpm
-serversideup/php:8.4-fpm-nginx
+# PHP 镜像（单架构）
+# serversideup/php:8.4-fpm
+# serversideup/php:8.4-fpm-nginx
 
-# 多架构镜像组（统一标签名为 caddy）
+# Caddy 多架构镜像组（统一标签名为 caddy）
 MULTI_ARCH_GROUP:caddy
 --platform=linux/amd64 caddy:2-alpine
 --platform=linux/arm64 caddy:2-alpine
