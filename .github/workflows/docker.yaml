@@ -4,6 +4,9 @@ on:
   workflow_dispatch:
   push:
     branches: [ main ]
+  schedule:
+    # 每周日凌晨2点UTC时间执行（北京时间周日上午10点）
+    - cron: '0 2 * * 0'
 
 
 env:
