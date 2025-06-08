@@ -98,13 +98,18 @@ jobs:
             # 获取原始镜像名
             image=$(echo "$line" | awk '{print $NF}')
 
-            # 根据原始镜像名生成目标镜像名（只将 / 替换为 -，保留 :）
-            target_image_name=$(echo "$image" | sed 's/\//-/g')
-            echo "目标镜像名: $target_image_name"
+            # 根据原始镜像名生成目标镜像名（只将 / 替换为 -）
+            # 分离镜像名和标签
+            image_name_part=$(echo "$image" | cut -d':' -f1 | sed 's/\//-/g')
+            image_tag_part=$(echo "$image" | cut -d':' -f2-)
+
+            echo "镜像名部分: $image_name_part"
+            echo "标签部分: $image_tag_part"
 
             # 创建临时标签
-            temp_tag="${platform//\//_}_temp"
-            temp_image="$ALIYUN_REGISTRY/$ALIYUN_NAME_SPACE/${target_image_name}:${temp_tag}"
+            temp_tag="${image_tag_part}-${platform//\//_}-temp"
+            temp_image="$ALIYUN_REGISTRY/$ALIYUN_NAME_SPACE/${image_name_part}:${temp_tag}"
+            target_image_name="${image_name_part}:${image_tag_part}"
 
             echo "docker tag $image $temp_image"
             docker tag $image $temp_image
