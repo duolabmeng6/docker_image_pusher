@@ -58,6 +58,10 @@ jobs:
     - name: Build and push image Aliyun
       run: |
         docker login -u $ALIYUN_REGISTRY_USER -p $ALIYUN_REGISTRY_PASSWORD $ALIYUN_REGISTRY
+
+        # 启用 Docker 实验性功能以支持 manifest 命令
+        export DOCKER_CLI_EXPERIMENTAL=enabled
+
         # 数据预处理,判断镜像是否重名
         declare -A duplicate_images
         declare -A temp_map
@@ -97,15 +101,52 @@ jobs:
                 temp_map[$image_name]=$name_space
             fi       
         done < images.txt
-        
-        
+
+        # 多架构镜像组预处理
+        declare -A multi_arch_groups
+        declare -A multi_arch_images
+        current_group=""
+
         while IFS= read -r line || [ -n "$line" ]; do
             # 忽略空行与注释
             [[ -z "$line" ]] && continue
             if echo "$line" | grep -q '^\s*#'; then
                 continue
             fi
-        
+
+            # 检查是否是多架构组标记
+            if echo "$line" | grep -q '^MULTI_ARCH_GROUP:'; then
+                current_group=$(echo "$line" | sed 's/^MULTI_ARCH_GROUP://')
+                echo "发现多架构组: $current_group"
+                multi_arch_groups[$current_group]="true"
+                continue
+            fi
+
+            # 如果当前在多架构组中，记录该镜像
+            if [[ -n "$current_group" ]]; then
+                multi_arch_images["$line"]="$current_group"
+                echo "镜像 $line 属于多架构组 $current_group"
+            else
+                # 遇到非多架构组的镜像，清空当前组
+                current_group=""
+            fi
+        done < images.txt
+
+        # 存储多架构组的临时镜像，用于后续创建 manifest
+        declare -A temp_multi_arch_images
+
+        while IFS= read -r line || [ -n "$line" ]; do
+            # 忽略空行与注释
+            [[ -z "$line" ]] && continue
+            if echo "$line" | grep -q '^\s*#'; then
+                continue
+            fi
+
+            # 跳过多架构组标记行
+            if echo "$line" | grep -q '^MULTI_ARCH_GROUP:'; then
+                continue
+            fi
+
             echo "docker pull $line"
             docker pull $line
             platform=$(echo "$line" | awk -F'--platform[ =]' '{if (NF>1) print $2}' | awk '{print $1}')
@@ -138,20 +179,69 @@ jobs:
             
             # 将@sha256:等字符删除
             image_name_tag="${image_name_tag%%@*}"
-            new_image="$ALIYUN_REGISTRY/$ALIYUN_NAME_SPACE/$platform_prefix$name_space_prefix$image_name_tag"
-            echo "docker tag $image $new_image"
-            docker tag $image $new_image
-            echo "docker push $new_image"
-            docker push $new_image
+
+            # 检查是否为多架构镜像
+            if [[ -n "${multi_arch_images[$line]}" ]]; then
+                # 多架构镜像：使用临时标签推送
+                group_name="${multi_arch_images[$line]}"
+                temp_tag="${platform//\//_}_temp"
+                new_image="$ALIYUN_REGISTRY/$ALIYUN_NAME_SPACE/${group_name}:${temp_tag}"
+                echo "多架构镜像 - docker tag $image $new_image"
+                docker tag $image $new_image
+                echo "多架构镜像 - docker push $new_image"
+                docker push $new_image
+
+                # 记录临时镜像，用于后续创建 manifest
+                if [[ -z "${temp_multi_arch_images[$group_name]}" ]]; then
+                    temp_multi_arch_images[$group_name]="$new_image"
+                else
+                    temp_multi_arch_images[$group_name]="${temp_multi_arch_images[$group_name]} $new_image"
+                fi
+            else
+                # 单架构镜像：使用原有逻辑
+                new_image="$ALIYUN_REGISTRY/$ALIYUN_NAME_SPACE/$platform_prefix$name_space_prefix$image_name_tag"
+                echo "单架构镜像 - docker tag $image $new_image"
+                docker tag $image $new_image
+                echo "单架构镜像 - docker push $new_image"
+                docker push $new_image
+            fi
             echo "开始清理磁盘空间"
             echo "=============================================================================="
             df -hT
             echo "=============================================================================="
             docker rmi $image
-            docker rmi $new_image
+
+            # 多架构镜像的临时镜像不立即删除，等创建 manifest 后再删除
+            if [[ -z "${multi_arch_images[$line]}" ]]; then
+                docker rmi $new_image
+            fi
+
             echo "磁盘空间清理完毕"
             echo "=============================================================================="
             df -hT
-            echo "=============================================================================="     
-            
+            echo "=============================================================================="
+
         done < images.txt
+
+        # 创建多架构镜像的 manifest
+        for group_name in "${!multi_arch_groups[@]}"; do
+            if [[ -n "${temp_multi_arch_images[$group_name]}" ]]; then
+                echo "创建多架构镜像 manifest: $group_name"
+                final_image="$ALIYUN_REGISTRY/$ALIYUN_NAME_SPACE/$group_name"
+                temp_images=(${temp_multi_arch_images[$group_name]})
+
+                echo "docker manifest create $final_image ${temp_images[*]}"
+                docker manifest create $final_image ${temp_images[*]}
+
+                echo "docker manifest push $final_image"
+                docker manifest push $final_image
+
+                echo "多架构镜像 $group_name 创建完成"
+
+                # 清理临时镜像
+                for temp_img in ${temp_images[*]}; do
+                    echo "清理临时镜像: $temp_img"
+                    docker rmi $temp_img || true
+                done
+            fi
+        done

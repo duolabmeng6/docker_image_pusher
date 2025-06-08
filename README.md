@@ -60,9 +60,31 @@ shrimp-images 即 ALIYUN_NAME_SPACE(阿里云命名空间)<br>
 alpine 即 阿里云中显示的镜像名<br>
 
 ### 多架构
+有两种多架构支持方式：
+
+#### 方式一：单独架构镜像（原有方式）
 需要在images.txt中用 --platform=xxxxx手动指定镜像架构
 指定后的架构会以前缀的形式放在镜像名字前面
 ![](doc/多架构.png)
+
+#### 方式二：统一多架构镜像（推荐）
+使用 `MULTI_ARCH_GROUP:` 标记创建统一标签的多架构镜像：
+```
+# 多架构镜像组（最终镜像名为 caddy）
+MULTI_ARCH_GROUP:caddy
+--platform=linux/amd64 caddy:2-alpine
+--platform=linux/arm64 caddy:2-alpine
+```
+
+使用统一多架构镜像的优势：
+- 同一个镜像名支持多个架构
+- Docker 会自动选择匹配的架构
+- 更符合 Docker 官方推荐做法
+
+拉取时直接使用统一的镜像名：
+```
+docker pull registry.cn-hangzhou.aliyuncs.com/shrimp-images/caddy
+```
 
 ### 镜像重名
 程序自动判断是否存在名称相同, 但是属于不同命名空间的情况。
