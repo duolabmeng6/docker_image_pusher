@@ -14,9 +14,9 @@ MULTI_ARCH_GROUP:caddy:2-alpine
 --platform=linux/arm64 caddy:2-alpine
 
 # duolabmeng/easy-docker-composer 多架构镜像组（最终镜像名：duolabmeng/llpanel）
-MULTI_ARCH_GROUP:duolabmeng/llpanel:2.0.4
---platform=linux/amd64 duolabmeng/llpanel:2.0.4
---platform=linux/arm64 duolabmeng/llpanel:2.0.4
+MULTI_ARCH_GROUP:duolabmeng/llpanel:2.0.5
+--platform=linux/amd64 duolabmeng/llpanel:2.0.5
+--platform=linux/arm64 duolabmeng/llpanel:2.0.5
 
 #支持私库
 #k8s.gcr.io/kube-state-metrics/kube-state-metrics:v2.0.0
