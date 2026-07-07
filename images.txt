@@ -19,6 +19,11 @@ MULTI_ARCH_GROUP:serversideup/php:8.5-fpm-nginx
 --platform=linux/amd64 serversideup/php:8.5-fpm-nginx
 --platform=linux/arm64 serversideup/php:8.5-fpm-nginx
 
+# nginx-proxy-manager 多架构镜像组（最终镜像名：jc21-nginx-proxy-manager）
+MULTI_ARCH_GROUP:jc21/nginx-proxy-manager:2.15.1
+--platform=linux/amd64 jc21/nginx-proxy-manager:2.15.1
+--platform=linux/arm64 jc21/nginx-proxy-manager:2.15.1
+
 # Caddy 多架构镜像组（最终镜像名：caddy:2-alpine）
 MULTI_ARCH_GROUP:caddy:2-alpine
 --platform=linux/amd64 caddy:2-alpine
