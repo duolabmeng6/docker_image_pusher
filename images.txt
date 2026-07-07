@@ -8,6 +8,17 @@ MULTI_ARCH_GROUP:serversideup/php:8.4-fpm-nginx
 --platform=linux/amd64 serversideup/php:8.4-fpm-nginx
 --platform=linux/arm64 serversideup/php:8.4-fpm-nginx
 
+
+# PHP 8.5 FPM 多架构镜像组（最终镜像名：serversideup-php:8.5-fpm）
+MULTI_ARCH_GROUP:serversideup/php:8.5-fpm
+--platform=linux/amd64 serversideup/php:8.5-fpm
+--platform=linux/arm64 serversideup/php:8.5-fpm
+
+# PHP 8.5 FPM-Nginx 多架构镜像组（最终镜像名：serversideup-php:8.5-fpm-nginx）
+MULTI_ARCH_GROUP:serversideup/php:8.5-fpm-nginx
+--platform=linux/amd64 serversideup/php:8.5-fpm-nginx
+--platform=linux/arm64 serversideup/php:8.5-fpm-nginx
+
 # Caddy 多架构镜像组（最终镜像名：caddy:2-alpine）
 MULTI_ARCH_GROUP:caddy:2-alpine
 --platform=linux/amd64 caddy:2-alpine
